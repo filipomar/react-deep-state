@@ -1,4 +1,4 @@
-# @react/deep-state
+# react-extended-state
 
 Sometimes `React.useState` and `React.useReducer` are not enough.<br />
 Sometimes you need to have a complex object and still be concerned about speed of your react components on updates.<br />
@@ -20,7 +20,7 @@ Usage:
 ```tsx
 import React, { FC } from 'react';
 import { render } from 'react-dom';
-import { createDeepState } from '@react/deep-state';
+import { createDeepState } from 'react-extended-state';
 
 type State = { readonly name: string };
 
