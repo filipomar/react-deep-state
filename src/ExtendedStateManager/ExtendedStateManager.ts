@@ -34,7 +34,7 @@ export const areResultsEqual = <S>(previous: S, current: S, filter: Filter<S>): 
     return result === filter(current, previous);
 };
 
-export class DeepStateManager<S> {
+export class ExtendedStateManager<S> {
     private state: S;
     private subscribers: Set<Subscriber>;
 

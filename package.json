@@ -1,6 +1,6 @@
 {
     "name": "react-extended-state",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A simple react provider and hook implementation to allow for state management",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -16,7 +16,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/filipomar/react-deep-state.git"
+        "url": "git+https://github.com/filipomar/react-extended-state.git"
     },
     "keywords": [
         "react",
@@ -29,9 +29,9 @@
     "author": "Filipe Pomar",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/filipomar/react-deep-state/issues"
+        "url": "https://github.com/filipomar/react-extended-state/issues"
     },
-    "homepage": "https://github.com/filipomar/react-deep-state#readme",
+    "homepage": "https://github.com/filipomar/react-extended-state#readme",
     "devDependencies": {
         "@testing-library/react": "^11.2.5",
         "@types/jest": "^26.0.20",
@@ -49,6 +49,6 @@
         "typescript": "^4.1.5"
     },
     "dependencies": {
-        "react": "^17.0.1"
+        "react": "^16.14.0"
     }
 }

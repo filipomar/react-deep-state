@@ -20,15 +20,15 @@ Usage:
 ```tsx
 import React, { FC } from 'react';
 import { render } from 'react-dom';
-import { createDeepState } from 'react-extended-state';
+import { createExtendedState } from 'react-extended-state';
 
 type State = { readonly name: string };
 
-const { Provider, useDeepState, useDeepStateDispatcher } = createDeepState<State>();
+const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
 
 const App: FC = () => {
-    const name = useDeepState((s) => s.name);
-    const dispatch = useDeepStateDispatcher();
+    const name = useExtendedState((s) => s.name);
+    const dispatch = useExtendedStateDispatcher();
 
     return (
         <div>

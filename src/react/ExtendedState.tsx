@@ -1,46 +1,46 @@
 import React, { createContext, FC, useContext, useEffect, useMemo, useState } from 'react';
 
-import { DeepStateManager, areResultsEqual, Filter } from '../DeepStateManager';
+import { ExtendedStateManager, areResultsEqual, Filter } from '../ExtendedStateManager';
 import { CapturePoint, throwCaptured } from '../utils';
 
-export type ProvderProps<S> = { readonly initial: S } | { readonly manager: DeepStateManager<S> };
+export type ProvderProps<S> = { readonly initial: S } | { readonly manager: ExtendedStateManager<S> };
 export type Selector<S, R> = (s: S) => R;
 export type Dispatcher<S> = () => (newState: Partial<S>) => void;
 
 /**
- * Creates the `DeepState` object necessary to create and manage a deep state on react
+ * Creates the `ExtendedState` object necessary to create and manage an extended state on react
  * Allowing simple way to manage a state with-out unnecessary renders
  *
- * @example const { Provider, useDeepState, useDeepStateDispatcher } = createDeepState<{ readonly a: string | null; }>();
+ * @example const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<{ readonly a: string | null; }>();
  */
-export type DeepState<S> = {
+export type ExtendedState<S> = {
     /**
-     * The provider of the deep state
+     * The provider of the extended state
      *
      * @example <Provider initial={{ a: null, b: null }}>{children}</Provider>
-     * @example <Provider manager={new DeepStateManager({ a: null, b: null })}>{children}</Provider>
+     * @example <Provider manager={new ExtendedStateManager({ a: null, b: null })}>{children}</Provider>
      */
     readonly Provider: FC<ProvderProps<S>>;
 
     /**
      * If you want to use the state as a hook
      * Check out `Filter<R>` for more complex filtering
-     * @example useDeepState((s) => s.a)
-     * @example useDeepState((s) => s.a, (s) => s.a)
+     * @example useExtendedState((s) => s.a)
+     * @example useExtendedState((s) => s.a, (s) => s.a)
      */
-    readonly useDeepState: <R>(state: Selector<S, R>, filter?: Filter<R>) => R;
+    readonly useExtendedState: <R>(state: Selector<S, R>, filter?: Filter<R>) => R;
 
     /**
      * If you want to update the state
-     * @example useDeepStateDispatcher()({ a: null })
+     * @example useExtendedStateDispatcher()({ a: null })
      */
-    readonly useDeepStateDispatcher: Dispatcher<S>;
+    readonly useExtendedStateDispatcher: Dispatcher<S>;
 };
 
-export const createDeepState = <S extends unknown>(): DeepState<S> => {
-    const Context = createContext<DeepStateManager<S> | null>(null);
+export const createExtendedState = <S extends unknown>(): ExtendedState<S> => {
+    const Context = createContext<ExtendedStateManager<S> | null>(null);
 
-    const getContext = (caller: CapturePoint): DeepStateManager<S> => {
+    const getContext = (caller: CapturePoint): ExtendedStateManager<S> => {
         const state = useContext(Context);
 
         if (state) {
@@ -50,22 +50,22 @@ export const createDeepState = <S extends unknown>(): DeepState<S> => {
         return throwCaptured(new Error('Must be used with-in a Provider'), caller);
     };
 
-    const Provider: DeepState<S>['Provider'] = ({ children, ...props }) => {
+    const Provider: ExtendedState<S>['Provider'] = ({ children, ...props }) => {
         /**
          * The manager is created at the beginning
          * All actions will be applied on to it
          */
-        const manager = useMemo(() => ('initial' in props ? new DeepStateManager(props.initial) : props.manager), [
+        const manager = useMemo(() => ('initial' in props ? new ExtendedStateManager(props.initial) : props.manager), [
             'initial' in props ? props.initial : props.manager,
         ]);
         return <Context.Provider value={manager}>{children}</Context.Provider>;
     };
 
-    const useDeepState: DeepState<S>['useDeepState'] = (selector, filter) => {
+    const useExtendedState: ExtendedState<S>['useExtendedState'] = (selector, filter) => {
         /**
          * First retrieve the context
          */
-        const manager = getContext(useDeepState);
+        const manager = getContext(useExtendedState);
 
         /**
          * Calulate initial value and set it to the result
@@ -95,14 +95,14 @@ export const createDeepState = <S extends unknown>(): DeepState<S> => {
         return currentResult;
     };
 
-    const useDeepStateDispatcher: DeepState<S>['useDeepStateDispatcher'] = (): ((newState: Partial<S>) => void) => {
+    const useExtendedStateDispatcher: ExtendedState<S>['useExtendedStateDispatcher'] = (): ((newState: Partial<S>) => void) => {
         /**
          * First retrieve the context
          */
-        const manager = getContext(useDeepStateDispatcher);
+        const manager = getContext(useExtendedStateDispatcher);
 
         return (s) => manager.setState(s);
     };
 
-    return { Provider, useDeepState, useDeepStateDispatcher };
+    return { Provider, useExtendedState, useExtendedStateDispatcher };
 };

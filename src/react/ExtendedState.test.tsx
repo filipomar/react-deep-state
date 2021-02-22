@@ -1,32 +1,32 @@
 import React, { ConsumerProps, FC } from 'react';
 import { render } from '@testing-library/react';
 
-import { createDeepState, Dispatcher } from '.';
+import { createExtendedState as createExtendedState, Dispatcher } from '.';
 
-import { DeepStateManager } from '..';
+import { ExtendedStateManager } from '..';
 
 type State = { readonly a: string | null; readonly b: string | null };
-const { Provider, useDeepState, useDeepStateDispatcher } = createDeepState<{ readonly a: string | null; readonly b: string | null }>();
+const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<{ readonly a: string | null; readonly b: string | null }>();
 
 const Helper: FC<ConsumerProps<void>> = ({ children }) => {
     return <>{children()}</>;
 };
 
-describe(createDeepState.name, () => {
+describe(createExtendedState.name, () => {
     it('throws error if hooks are called outside of provider', () => {
         const errorSpy = jest.spyOn(console, 'error').mockReturnValue();
-        expect(() => render(<Helper>{() => <>{useDeepState((s) => s.a)}</>}</Helper>)).toThrowError(new Error('Must be used with-in a Provider'));
+        expect(() => render(<Helper>{() => <>{useExtendedState((s) => s.a)}</>}</Helper>)).toThrowError(new Error('Must be used with-in a Provider'));
         expect(errorSpy).toBeCalledTimes(2);
     });
 
-    it('allows for usage of useDeepState hook inside of it', () => {
+    it('allows for usage of useExtendedState hook inside of it', () => {
         const renderSpy = jest.fn();
 
         const { container } = render(
             <Provider initial={{ a: null, b: null }}>
                 <Helper>
                     {() => {
-                        const a = useDeepState((s) => s.a);
+                        const a = useExtendedState((s) => s.a);
                         renderSpy();
                         return <>{String(a)}</>;
                     }}
@@ -38,16 +38,16 @@ describe(createDeepState.name, () => {
         expect(renderSpy).toBeCalledTimes(1);
     });
 
-    it('only causes re-renders when useDeepState hook deems necessary', () => {
+    it('only causes re-renders when useExtendedState hook deems necessary', () => {
         const renderSpy = jest.fn();
 
-        const manager = new DeepStateManager<State>({ a: null, b: null });
+        const manager = new ExtendedStateManager<State>({ a: null, b: null });
 
         const { container } = render(
             <Provider manager={manager}>
                 <Helper>
                     {() => {
-                        const a = useDeepState((s) => s.a);
+                        const a = useExtendedState((s) => s.a);
                         renderSpy();
                         return <>{String(a)}</>;
                     }}
@@ -104,14 +104,14 @@ describe(createDeepState.name, () => {
     it('allows for custom hook change filter', () => {
         const renderSpy = jest.fn();
 
-        const manager = new DeepStateManager<State>({ a: null, b: null });
+        const manager = new ExtendedStateManager<State>({ a: null, b: null });
         const filterSpy = jest.fn<string | null, [State]>().mockImplementation((s) => s.a);
 
         const { container } = render(
             <Provider manager={manager}>
                 <Helper>
                     {() => {
-                        const { a } = useDeepState((s) => s, filterSpy);
+                        const { a } = useExtendedState((s) => s, filterSpy);
                         renderSpy();
                         return <>{String(a)}</>;
                     }}
@@ -149,8 +149,8 @@ describe(createDeepState.name, () => {
             <Provider initial={{ a: null, b: null }}>
                 <Helper>
                     {() => {
-                        const dispatch = useDeepStateDispatcher();
-                        const a = useDeepState((s) => s.a);
+                        const dispatch = useExtendedStateDispatcher();
+                        const a = useExtendedState((s) => s.a);
                         renderSpy(dispatch);
                         return <>{String(a)}</>;
                     }}
