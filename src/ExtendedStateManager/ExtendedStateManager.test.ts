@@ -1,12 +1,12 @@
-import { DeepStateManager } from '.';
+import { ExtendedStateManager } from '.';
 
-describe(DeepStateManager.name, () => {
+describe(ExtendedStateManager.name, () => {
     it('listens to any changes if no filter is passed', () => {
         type State = { readonly a: string | null; readonly b: string | null };
 
         const subscriber = jest.fn();
 
-        const manager = new DeepStateManager<State>({ a: null, b: null });
+        const manager = new ExtendedStateManager<State>({ a: null, b: null });
         const unsub = manager.subscribe(subscriber);
 
         expect(manager.getState()).toStrictEqual<State>({ a: null, b: null });
@@ -36,7 +36,7 @@ describe(DeepStateManager.name, () => {
         const subscriber = jest.fn();
         const filter = jest.fn().mockImplementation((previous: State, current: State) => previous.b === current.b);
 
-        const manager = new DeepStateManager<State>({ a: null, b: null });
+        const manager = new ExtendedStateManager<State>({ a: null, b: null });
         const unsub = manager.subscribe(filter, subscriber);
 
         /**
@@ -87,7 +87,7 @@ describe(DeepStateManager.name, () => {
         const subscriber = jest.fn();
         const filter = jest.fn().mockImplementation((state: State) => state.b);
 
-        const manager = new DeepStateManager<State>({ a: null, b: null });
+        const manager = new ExtendedStateManager<State>({ a: null, b: null });
         const unsub = manager.subscribe(filter, subscriber);
 
         /**
@@ -139,7 +139,7 @@ describe(DeepStateManager.name, () => {
         const subscriberTwo = jest.fn();
         const subscriberThree = jest.fn();
 
-        const manager = new DeepStateManager<State>({ a: null, b: null });
+        const manager = new ExtendedStateManager<State>({ a: null, b: null });
 
         const unsubOne = manager.subscribe(subscriberOne);
         const unsubTwo = manager.subscribe(subscriberTwo);

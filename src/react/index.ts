@@ -1,1 +1,1 @@
-export * from './DeepState';
+export * from './ExtendedState';
