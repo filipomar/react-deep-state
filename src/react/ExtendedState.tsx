@@ -40,7 +40,7 @@ export type ExtendedState<S> = {
 export const createExtendedState = <S extends unknown>(): ExtendedState<S> => {
     const Context = createContext<ExtendedStateManager<S> | null>(null);
 
-    const getContext = (caller: CapturePoint): ExtendedStateManager<S> => {
+    const getManager = (caller: CapturePoint): ExtendedStateManager<S> => {
         const state = useContext(Context);
 
         if (state) {
@@ -58,6 +58,7 @@ export const createExtendedState = <S extends unknown>(): ExtendedState<S> => {
         const manager = useMemo(() => ('initial' in props ? new ExtendedStateManager(props.initial) : props.manager), [
             'initial' in props ? props.initial : props.manager,
         ]);
+
         return <Context.Provider value={manager}>{children}</Context.Provider>;
     };
 
@@ -65,12 +66,12 @@ export const createExtendedState = <S extends unknown>(): ExtendedState<S> => {
         /**
          * First retrieve the context
          */
-        const manager = getContext(useExtendedState);
+        const manager = getManager(useExtendedState);
 
         /**
          * Calulate initial value and set it to the result
          */
-        const [currentResult, setResult] = useState(useMemo(() => selector(manager.getState()), []));
+        const [currentResult, setResult] = useState(() => selector(manager.getState()));
 
         useEffect(
             () =>
@@ -87,7 +88,17 @@ export const createExtendedState = <S extends unknown>(): ExtendedState<S> => {
                          */
                         return Boolean(previous === current || (filter && areResultsEqual(current, previous, filter)));
                     },
-                    () => setResult(selector(manager.getState()))
+                    /**
+                     * If the the value being returned is a function
+                     * Then it needs to be wrapped in another function in order to avoid its execution
+                     *
+                     * The reason?
+                     * https://reactjs.org/docs/hooks-reference.html#functional-updates
+                     */
+                    () => {
+                        const newValue = selector(manager.getState());
+                        setResult(typeof newValue === 'function' ? () => newValue : newValue);
+                    }
                 ),
             []
         );
@@ -99,7 +110,7 @@ export const createExtendedState = <S extends unknown>(): ExtendedState<S> => {
         /**
          * First retrieve the context
          */
-        const manager = getContext(useExtendedStateDispatcher);
+        const manager = getManager(useExtendedStateDispatcher);
 
         return (s) => manager.setState(s);
     };
