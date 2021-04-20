@@ -1,6 +1,6 @@
 {
     "name": "react-extended-state",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "A simple react provider and hook implementation to allow for state management",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -33,20 +33,20 @@
     },
     "homepage": "https://github.com/filipomar/react-extended-state#readme",
     "devDependencies": {
-        "@testing-library/react": "^11.2.5",
-        "@types/jest": "^26.0.20",
-        "@types/react": "^17.0.2",
-        "@typescript-eslint/eslint-plugin": "^4.15.1",
-        "@typescript-eslint/parser": "^4.15.1",
-        "eslint": "^7.20.0",
+        "@testing-library/react": "^11.2.6",
+        "@types/jest": "^26.0.22",
+        "@types/react": "^17.0.3",
+        "@typescript-eslint/eslint-plugin": "^4.22.0",
+        "@typescript-eslint/parser": "^4.22.0",
+        "eslint": "^7.24.0",
         "eslint-config-prettier": "^7.2.0",
-        "eslint-plugin-react": "^7.22.0",
+        "eslint-plugin-react": "^7.23.2",
         "jest": "^26.6.3",
         "prettier": "^2.2.1",
-        "react-dom": "^17.0.1",
-        "ts-jest": "^26.5.1",
+        "react-dom": "^17.0.2",
+        "ts-jest": "^26.5.5",
         "ts-node": "^9.1.1",
-        "typescript": "^4.1.5"
+        "typescript": "^4.2.4"
     },
     "dependencies": {
         "react": "^16.14.0"

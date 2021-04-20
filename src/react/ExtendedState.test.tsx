@@ -1,5 +1,5 @@
 import React, { ConsumerProps, FC } from 'react';
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 
 import { createExtendedState as createExtendedState, Dispatcher } from '.';
 
@@ -166,5 +166,86 @@ describe(createExtendedState.name, () => {
         dispatcher({ a: '1' });
         expect(container.innerHTML).toBe(String('1'));
         expect(renderSpy).toBeCalledTimes(2);
+    });
+
+    it('allows for the usage of selectors that yield functions without calling them', () => {
+        type State = { readonly handler: () => void };
+
+        const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
+
+        const firstHandler = jest.fn<void, []>();
+        const secondHandler = jest.fn<void, []>();
+
+        const { container } = render(
+            <Provider initial={{ handler: firstHandler }}>
+                <Helper>
+                    {() => {
+                        const dispatch = useExtendedStateDispatcher();
+                        const onClick = useExtendedState((s) => s.handler);
+
+                        return (
+                            <div>
+                                <div id="reciever" onClick={onClick}>
+                                    Click on me to execute
+                                </div>
+                                <div id="changer" onClick={() => dispatch({ handler: secondHandler })}>
+                                    Click on me to change the executor
+                                </div>
+                            </div>
+                        );
+                    }}
+                </Helper>
+            </Provider>
+        );
+
+        /**
+         * No calls were made
+         */
+        expect(firstHandler).toBeCalledTimes(0);
+        expect(secondHandler).toBeCalledTimes(0);
+
+        const reciever = container.querySelector('#reciever');
+        const changer = container.querySelector('#changer');
+
+        if (!reciever) {
+            fail('Reciever was expected');
+        }
+
+        if (!changer) {
+            fail('Changer was expected');
+        }
+
+        /**
+         * Execute the handler
+         */
+        fireEvent.click(reciever);
+
+        /**
+         * The first handler should have been called once
+         */
+        expect(firstHandler).toBeCalledTimes(1);
+        expect(secondHandler).toBeCalledTimes(0);
+
+        /**
+         * Swap the first for the second
+         */
+        fireEvent.click(changer);
+
+        /**
+         * No additional calls are made
+         */
+        expect(firstHandler).toBeCalledTimes(1);
+        expect(secondHandler).toBeCalledTimes(0);
+
+        /**
+         * Execute the handler
+         */
+        fireEvent.click(reciever);
+
+        /**
+         * Second handler is called
+         */
+        expect(firstHandler).toBeCalledTimes(1);
+        expect(secondHandler).toBeCalledTimes(1);
     });
 });
