@@ -259,7 +259,7 @@ describe(createExtendedState.name, () => {
             const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
 
             const { container } = render(
-                <Provider initial={{ value: 2, undisturbed: 0 }}>
+                <Provider initial={{ value: 2, undisturbed: 1 }}>
                     <Helper>
                         {() => {
                             const dispatch = useExtendedStateDispatcher();
@@ -272,20 +272,26 @@ describe(createExtendedState.name, () => {
 
             await delay(0);
 
-            expect(container.innerHTML).toBe('[2,0]');
+            /**
+             * Initial state
+             */
+            expect(container.innerHTML).toBe('[2,1]');
 
             const [[dispatcher]] = renderSpy.mock.calls;
 
-            dispatcher(({ value }) => ({ value: value * 2 }));
+            /**
+             * Update value, read from the whole state, but pass only the value
+             */
+            dispatcher(({ value, undisturbed }) => ({ value: value * 2 + undisturbed }));
 
             await delay(0);
 
-            expect(container.innerHTML).toBe('[4,0]');
+            expect(container.innerHTML).toBe('[5,1]');
 
-            dispatcher(({ value }) => ({ value: value * 2 }));
+            dispatcher(({ value, undisturbed }) => ({ value: value * 2 + undisturbed }));
 
             await delay(0);
 
-            expect(container.innerHTML).toBe('[8,0]');
+            expect(container.innerHTML).toBe('[11,1]');
         }));
 });
