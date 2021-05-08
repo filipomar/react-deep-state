@@ -1,11 +1,11 @@
 import React, { createContext, FC, useContext, useEffect, useMemo, useState } from 'react';
 
-import { ExtendedStateManager, areResultsEqual, Filter } from '../ExtendedStateManager';
+import { ExtendedStateManager, areResultsEqual, Filter, PossibleExtendedState } from '../ExtendedStateManager';
 import { CapturePoint, throwCaptured } from '../utils';
 
-export type ProvderProps<S> = { readonly initial: S } | { readonly manager: ExtendedStateManager<S> };
+export type ProvderProps<S extends PossibleExtendedState> = { readonly initial: S } | { readonly manager: ExtendedStateManager<S> };
 export type Selector<S, R> = (s: S) => R;
-export type Dispatcher<S> = () => (newState: Partial<S>) => void;
+export type Dispatcher<S> = () => (newStateOrGenerator: Partial<S> | ((currentState: S) => Partial<S>)) => void;
 
 /**
  * Creates the `ExtendedState` object necessary to create and manage an extended state on react
@@ -13,7 +13,7 @@ export type Dispatcher<S> = () => (newState: Partial<S>) => void;
  *
  * @example const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<{ readonly a: string | null; }>();
  */
-export type ExtendedState<S> = {
+export type ExtendedState<S extends PossibleExtendedState> = {
     /**
      * The provider of the extended state
      *
@@ -37,7 +37,7 @@ export type ExtendedState<S> = {
     readonly useExtendedStateDispatcher: Dispatcher<S>;
 };
 
-export const createExtendedState = <S extends unknown>(): ExtendedState<S> => {
+export const createExtendedState = <S extends PossibleExtendedState>(): ExtendedState<S> => {
     const Context = createContext<ExtendedStateManager<S> | null>(null);
 
     const getManager = (caller: CapturePoint): ExtendedStateManager<S> => {
@@ -106,13 +106,16 @@ export const createExtendedState = <S extends unknown>(): ExtendedState<S> => {
         return currentResult;
     };
 
-    const useExtendedStateDispatcher: ExtendedState<S>['useExtendedStateDispatcher'] = (): ((newState: Partial<S>) => void) => {
+    const useExtendedStateDispatcher: ExtendedState<S>['useExtendedStateDispatcher'] = () => {
         /**
          * First retrieve the context
          */
         const manager = getManager(useExtendedStateDispatcher);
 
-        return (s) => manager.setState(s);
+        return (newStateOrGenerator) => {
+            const state = newStateOrGenerator instanceof Function ? newStateOrGenerator(manager.getState()) : newStateOrGenerator;
+            manager.setState(state);
+        };
     };
 
     return { Provider, useExtendedState, useExtendedStateDispatcher };

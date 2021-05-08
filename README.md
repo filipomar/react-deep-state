@@ -13,7 +13,6 @@ Then this is a perfect solution for you! A simple react provider and hook implem
 -   It has type checking at its core
 -   Easy setup (under 5 lines)
 -   No more useless renders!
--   **No** right wing conspiracy, only a react helper :)
 
 Usage:
 
@@ -22,6 +21,9 @@ import React, { FC } from 'react';
 import { render } from 'react-dom';
 import { createExtendedState } from 'react-extended-state';
 
+/**
+ * This will be destructured, so be careful of what the top state is
+ **/
 type State = { readonly name: string };
 
 const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();

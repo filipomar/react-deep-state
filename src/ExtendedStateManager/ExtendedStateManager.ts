@@ -10,6 +10,11 @@ export type Unsubber = () => void;
 export type Subscriber = () => void;
 
 /**
+ * Minimal state
+ */
+export type PossibleExtendedState = Record<string | number | symbol, unknown>;
+
+/**
  * Compares state changes if you wish to **not** perform unecessary re-renders
  *
  * @example `[(before, after) => before === after, () => { ... }]` as a equality validation
@@ -34,7 +39,7 @@ export const areResultsEqual = <S>(previous: S, current: S, filter: Filter<S>): 
     return result === filter(current, previous);
 };
 
-export class ExtendedStateManager<S> {
+export class ExtendedStateManager<S extends PossibleExtendedState> {
     private state: S;
     private subscribers: Set<Subscriber>;
 

@@ -1,5 +1,5 @@
 import React, { ConsumerProps, FC } from 'react';
-import { fireEvent, render } from '@testing-library/react';
+import { act, fireEvent, render } from '@testing-library/react';
 
 import { createExtendedState as createExtendedState, Dispatcher } from '.';
 
@@ -11,6 +11,8 @@ const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtende
 const Helper: FC<ConsumerProps<void>> = ({ children }) => {
     return <>{children()}</>;
 };
+
+const delay = async (time: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, time));
 
 describe(createExtendedState.name, () => {
     it('throws error if hooks are called outside of provider', () => {
@@ -248,4 +250,42 @@ describe(createExtendedState.name, () => {
         expect(firstHandler).toBeCalledTimes(1);
         expect(secondHandler).toBeCalledTimes(1);
     });
+
+    it('allows state update through derived state generation', () =>
+        act(async () => {
+            type State = { readonly value: number; readonly undisturbed: number };
+            const renderSpy = jest.fn<void, [ReturnType<Dispatcher<State>>]>();
+
+            const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
+
+            const { container } = render(
+                <Provider initial={{ value: 2, undisturbed: 0 }}>
+                    <Helper>
+                        {() => {
+                            const dispatch = useExtendedStateDispatcher();
+                            renderSpy(dispatch);
+                            return <>{useExtendedState((s) => `[${s.value},${s.undisturbed}]`)}</>;
+                        }}
+                    </Helper>
+                </Provider>
+            );
+
+            await delay(0);
+
+            expect(container.innerHTML).toBe('[2,0]');
+
+            const [[dispatcher]] = renderSpy.mock.calls;
+
+            dispatcher(({ value }) => ({ value: value * 2 }));
+
+            await delay(0);
+
+            expect(container.innerHTML).toBe('[4,0]');
+
+            dispatcher(({ value }) => ({ value: value * 2 }));
+
+            await delay(0);
+
+            expect(container.innerHTML).toBe('[8,0]');
+        }));
 });
