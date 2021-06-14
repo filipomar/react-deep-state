@@ -100,7 +100,7 @@ export const createExtendedState = <S extends PossibleExtendedState>(): Extended
                         setResult(typeof newValue === 'function' ? () => newValue : newValue);
                     }
                 ),
-            []
+            [manager]
         );
 
         return currentResult;
