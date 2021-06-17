@@ -41,7 +41,7 @@ export const areResultsEqual = <S>(previous: S, current: S, filter: Filter<S>): 
 
 export class ExtendedStateManager<S extends PossibleExtendedState> {
     private state: S;
-    private subscribers: Set<Subscriber>;
+    private readonly subscribers: Set<Subscriber>;
 
     constructor(initialState: S) {
         this.state = initialState;

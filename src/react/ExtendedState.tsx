@@ -1,4 +1,4 @@
-import React, { createContext, FC, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, FC, useContext, useLayoutEffect, useMemo, useState } from 'react';
 
 import { ExtendedStateManager, areResultsEqual, Filter, PossibleExtendedState } from '../ExtendedStateManager';
 import { CapturePoint, throwCaptured } from '../utils';
@@ -73,7 +73,11 @@ export const createExtendedState = <S extends PossibleExtendedState>(): Extended
          */
         const [currentResult, setResult] = useState(() => selector(manager.getState()));
 
-        useEffect(
+        /**
+         * Use layout is here so subscription (and further changes)
+         * Are done at the first possible moment
+         */
+        useLayoutEffect(
             () =>
                 manager.subscribe(
                     (previousState, currentState) => {
