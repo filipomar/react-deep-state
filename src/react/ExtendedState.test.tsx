@@ -294,4 +294,62 @@ describe(createExtendedState.name, () => {
 
             expect(container.innerHTML).toBe('[11,1]');
         }));
+
+    it('properly subscribes event even if changes are made before final render', () =>
+        act(async () => {
+            type State = { readonly value: number };
+            const state = new ExtendedStateManager<State>({ value: 1 });
+
+            const { Provider, useExtendedState } = createExtendedState<State>();
+
+            const { container, unmount } = render(
+                <Provider manager={state}>
+                    <Helper>
+                        {() => {
+                            const state = useExtendedState((s) => s.value);
+                            return <>{state}</>;
+                        }}
+                    </Helper>
+                </Provider>
+            );
+
+            /**
+             * Initial value is outputed
+             */
+            expect(container.textContent).toBe(String(1));
+
+            /**
+             * Update the outputed value even before the render is completeled
+             */
+            state.setState({ value: 2 });
+
+            /**
+             * Needs a quick second to update
+             */
+            expect(container.textContent).toBe(String(1));
+
+            /**
+             * Await for update
+             */
+            await delay(0);
+
+            /**
+             * Change was detected
+             */
+            expect(container.textContent).toBe(String(2));
+
+            await delay(100);
+
+            /**
+             * Further updates after a couple of milliseconds
+             */
+            state.setState({ value: 3 });
+
+            /**
+             * Update is done right away
+             */
+            expect(container.textContent).toBe(String(3));
+
+            unmount();
+        }));
 });
