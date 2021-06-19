@@ -37,7 +37,19 @@ export type ExtendedState<S extends PossibleExtendedState> = {
     readonly useExtendedStateDispatcher: Dispatcher<S>;
 };
 
-export const createExtendedState = <S extends PossibleExtendedState>(): ExtendedState<S> => {
+type CreateExtendedStateArgs = {
+    /**
+     * Ignore if changes the Provider props should result in changes of the state
+     * @default false
+     */
+    readonly ignoreInitialPropsChanges?: boolean;
+};
+
+/**
+ * For your sanity
+ * Call this outside of react rendering cycles ;)
+ */
+export const createExtendedState = <S extends PossibleExtendedState>({ ignoreInitialPropsChanges = false }: CreateExtendedStateArgs = {}): ExtendedState<S> => {
     const Context = createContext<ExtendedStateManager<S> | null>(null);
 
     const getManager = (caller: CapturePoint): ExtendedStateManager<S> => {
@@ -55,9 +67,20 @@ export const createExtendedState = <S extends PossibleExtendedState>(): Extended
          * The manager is created at the beginning
          * All actions will be applied on to it
          */
-        const manager = useMemo(() => ('initial' in props ? new ExtendedStateManager(props.initial) : props.manager), [
-            'initial' in props ? props.initial : props.manager,
-        ]);
+        const manager = useMemo(() => ('initial' in props ? new ExtendedStateManager(props.initial) : props.manager), []);
+
+        if (!ignoreInitialPropsChanges) {
+            /**
+             * If changes to the arguments are made
+             * The state is updated
+             */
+            useLayoutEffect(() => {
+                const state: S = 'initial' in props ? props.initial : props.manager.getState();
+                if (state !== manager.getState()) {
+                    manager.setState(state);
+                }
+            }, ['initial' in props ? props.initial : props.manager]);
+        }
 
         return <Context.Provider value={manager}>{children}</Context.Provider>;
     };

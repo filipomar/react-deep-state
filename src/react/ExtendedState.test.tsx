@@ -1,5 +1,5 @@
-import React, { ConsumerProps, FC } from 'react';
-import { act, fireEvent, render } from '@testing-library/react';
+import React, { ConsumerProps, FC, useState } from 'react';
+import { act, fireEvent, render, findByTestId } from '@testing-library/react';
 
 import { createExtendedState as createExtendedState, Dispatcher } from '.';
 
@@ -349,6 +349,106 @@ describe(createExtendedState.name, () => {
              * Update is done right away
              */
             expect(container.textContent).toBe(String(3));
+
+            unmount();
+        }));
+
+    it('will change provider if provider props are updated', () =>
+        act(async () => {
+            type State = { readonly value: number };
+
+            const { Provider, useExtendedState } = createExtendedState<State>();
+
+            const { container, unmount } = render(
+                <Helper>
+                    {() => {
+                        const [value, setValue] = useState(0);
+
+                        return (
+                            <>
+                                <button data-testid="button" onClick={() => setValue(1)}>
+                                    Click me!
+                                </button>
+                                <div>Outer value: {value}</div>
+                                <Provider initial={{ value }}>
+                                    <Helper>
+                                        {() => {
+                                            const value = useExtendedState((s) => s.value);
+                                            return (
+                                                <>
+                                                    <div>Internal value: {value}</div>
+                                                </>
+                                            );
+                                        }}
+                                    </Helper>
+                                </Provider>
+                            </>
+                        );
+                    }}
+                </Helper>
+            );
+
+            /**
+             * Initial value set to 0 everywhere
+             */
+            expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 0', 'Internal value: 0']);
+
+            fireEvent.click(await findByTestId(container, 'button'));
+
+            /**
+             * Initial value set to 1 everywhere
+             */
+            expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 1', 'Internal value: 1']);
+
+            unmount();
+        }));
+
+    it('will not change provider if provider props are updated', () =>
+        act(async () => {
+            type State = { readonly value: number };
+
+            const { Provider, useExtendedState } = createExtendedState<State>({ ignoreInitialPropsChanges: true });
+
+            const { container, unmount } = render(
+                <Helper>
+                    {() => {
+                        const [value, setValue] = useState(0);
+
+                        return (
+                            <>
+                                <button data-testid="button" onClick={() => setValue(1)}>
+                                    Click me!
+                                </button>
+                                <div>Outer value: {value}</div>
+                                <Provider initial={{ value }}>
+                                    <Helper>
+                                        {() => {
+                                            const value = useExtendedState((s) => s.value);
+                                            return (
+                                                <>
+                                                    <div>Internal value: {value}</div>
+                                                </>
+                                            );
+                                        }}
+                                    </Helper>
+                                </Provider>
+                            </>
+                        );
+                    }}
+                </Helper>
+            );
+
+            /**
+             * Initial value set to 0 everywhere
+             */
+            expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 0', 'Internal value: 0']);
+
+            fireEvent.click(await findByTestId(container, 'button'));
+
+            /**
+             * Initial value set to 1 only outside the provider
+             */
+            expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 1', 'Internal value: 0']);
 
             unmount();
         }));
