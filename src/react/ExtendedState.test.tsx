@@ -1,27 +1,27 @@
 import React, { ConsumerProps, FC, useEffect, useLayoutEffect, useState } from 'react';
 import { act, fireEvent, render, findByTestId } from '@testing-library/react';
 
-import { createExtendedState as createExtendedState, Dispatcher } from '.';
+import { createExtendedState, Dispatcher } from '.';
 
 import { ExtendedStateManager } from '..';
 
 type State = Readonly<{ a: string | null; b: string | null }>;
-const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
+type SingleValueState = Readonly<{ value: number }>;
 
-const Helper: FC<ConsumerProps<void>> = ({ children }) => {
-    return <>{children()}</>;
-};
+const Helper: FC<ConsumerProps<void>> = ({ children }) => <>{children()}</>;
 
 const delay = async (time: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, time));
 
 describe(createExtendedState.name, () => {
     it('throws error if hooks are called outside of provider', () => {
+        const { useExtendedState } = createExtendedState<State>();
         const errorSpy = jest.spyOn(console, 'error').mockReturnValue();
         expect(() => render(<Helper>{() => <>{useExtendedState((s) => s.a)}</>}</Helper>)).toThrowError(new Error('Must be used with-in a Provider'));
         expect(errorSpy).toBeCalledTimes(2);
     });
 
     it('allows for usage of useExtendedState hook inside of it', () => {
+        const { Provider, useExtendedState } = createExtendedState<State>();
         const renderSpy = jest.fn();
 
         const { container } = render(
@@ -33,7 +33,7 @@ describe(createExtendedState.name, () => {
                         return <>{String(a)}</>;
                     }}
                 </Helper>
-            </Provider>
+            </Provider>,
         );
 
         expect(container.innerHTML).toBe(String(null));
@@ -41,6 +41,7 @@ describe(createExtendedState.name, () => {
     });
 
     it('only causes re-renders when useExtendedState hook deems necessary', () => {
+        const { Provider, useExtendedState } = createExtendedState<State>();
         const renderSpy = jest.fn();
 
         const manager = new ExtendedStateManager<State>({ a: null, b: null });
@@ -54,7 +55,7 @@ describe(createExtendedState.name, () => {
                         return <>{String(a)}</>;
                     }}
                 </Helper>
-            </Provider>
+            </Provider>,
         );
 
         expect(container.innerHTML).toBe(String(null));
@@ -104,6 +105,7 @@ describe(createExtendedState.name, () => {
     });
 
     it('allows for custom hook change filter', () => {
+        const { Provider, useExtendedState } = createExtendedState<State>();
         const renderSpy = jest.fn();
 
         const manager = new ExtendedStateManager<State>({ a: null, b: null });
@@ -118,7 +120,7 @@ describe(createExtendedState.name, () => {
                         return <>{String(a)}</>;
                     }}
                 </Helper>
-            </Provider>
+            </Provider>,
         );
 
         expect(container.innerHTML).toBe(String(null));
@@ -145,6 +147,7 @@ describe(createExtendedState.name, () => {
     });
 
     it('allows for internal dispatching of changes', () => {
+        const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
         const renderSpy = jest.fn<void, [ReturnType<Dispatcher<State>>]>();
 
         const { container } = render(
@@ -157,7 +160,7 @@ describe(createExtendedState.name, () => {
                         return <>{String(a)}</>;
                     }}
                 </Helper>
-            </Provider>
+            </Provider>,
         );
 
         expect(container.innerHTML).toBe(String(null));
@@ -171,9 +174,9 @@ describe(createExtendedState.name, () => {
     });
 
     it('allows for the usage of selectors that yield functions without calling them', () => {
-        type State = Readonly<{ handler: () => void }>;
+        type HandlerState = Readonly<{ handler: () => void }>;
 
-        const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
+        const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<HandlerState>();
 
         const firstHandler = jest.fn<void, []>();
         const secondHandler = jest.fn<void, []>();
@@ -187,17 +190,17 @@ describe(createExtendedState.name, () => {
 
                         return (
                             <div>
-                                <div id="reciever" onClick={onClick}>
+                                <div id="reciever" role="none" onClick={onClick}>
                                     Click on me to execute
                                 </div>
-                                <div id="changer" onClick={() => dispatch({ handler: secondHandler })}>
+                                <div id="changer" role="none" onClick={() => dispatch({ handler: secondHandler })}>
                                     Click on me to change the executor
                                 </div>
                             </div>
                         );
                     }}
                 </Helper>
-            </Provider>
+            </Provider>,
         );
 
         /**
@@ -209,12 +212,8 @@ describe(createExtendedState.name, () => {
         const reciever = container.querySelector('#reciever');
         const changer = container.querySelector('#changer');
 
-        if (!reciever) {
-            fail('Reciever was expected');
-        }
-
-        if (!changer) {
-            fail('Changer was expected');
+        if (!reciever || !changer) {
+            throw new Error('Reciever and changer were expected');
         }
 
         /**
@@ -251,12 +250,11 @@ describe(createExtendedState.name, () => {
         expect(secondHandler).toBeCalledTimes(1);
     });
 
-    it('allows state update through derived state generation', () =>
-        act(async () => {
-            type State = Readonly<{ value: number; undisturbed: number }>;
-            const renderSpy = jest.fn<void, [ReturnType<Dispatcher<State>>]>();
+    it('allows state update through derived state generation', () => act(async () => {
+            type DerivedState = Readonly<{ value: number; undisturbed: number }>;
+            const renderSpy = jest.fn<void, [ReturnType<Dispatcher<DerivedState>>]>();
 
-            const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
+            const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<DerivedState>();
 
             const { container } = render(
                 <Provider initial={{ value: 2, undisturbed: 1 }}>
@@ -267,7 +265,7 @@ describe(createExtendedState.name, () => {
                             return <>{useExtendedState((s) => `[${s.value},${s.undisturbed}]`)}</>;
                         }}
                     </Helper>
-                </Provider>
+                </Provider>,
             );
 
             await delay(0);
@@ -293,198 +291,192 @@ describe(createExtendedState.name, () => {
             await delay(0);
 
             expect(container.innerHTML).toBe('[11,1]');
-        }));
+    }));
 
-    it('properly subscribes event even if changes are made before final render', () =>
-        act(async () => {
-            type State = Readonly<{ value: number }>;
-            const state = new ExtendedStateManager<State>({ value: 1 });
+    it('properly subscribes event even if changes are made before final render', () => act(async () => {
+        const state = new ExtendedStateManager<SingleValueState>({ value: 1 });
 
-            const { Provider, useExtendedState } = createExtendedState<State>();
+        const { Provider, useExtendedState } = createExtendedState<SingleValueState>();
 
-            const { container, unmount } = render(
-                <Provider manager={state}>
-                    <Helper>
-                        {() => {
-                            const state = useExtendedState((s) => s.value);
-                            return <>{state}</>;
-                        }}
-                    </Helper>
-                </Provider>
-            );
+        const { container, unmount } = render(
+            <Provider manager={state}>
+                <Helper>{() => useExtendedState((s) => s.value)}</Helper>
+            </Provider>,
+        );
 
-            /**
+        /**
              * Initial value is outputed
              */
-            expect(container.textContent).toBe(String(1));
+        expect(container.textContent).toBe(String(1));
 
-            /**
+        /**
              * Update the outputed value even before the render is completeled
              */
-            state.setState({ value: 2 });
+        state.setState({ value: 2 });
 
-            /**
+        /**
              * Needs a quick second to update
              */
-            expect(container.textContent).toBe(String(1));
+        expect(container.textContent).toBe(String(1));
 
-            /**
+        /**
              * Await for update
              */
-            await delay(0);
+        await delay(0);
 
-            /**
+        /**
              * Change was detected
              */
-            expect(container.textContent).toBe(String(2));
+        expect(container.textContent).toBe(String(2));
 
-            await delay(100);
+        await delay(100);
 
-            /**
+        /**
              * Further updates after a couple of milliseconds
              */
-            state.setState({ value: 3 });
+        state.setState({ value: 3 });
 
-            /**
+        /**
              * Update is done right away
              */
-            expect(container.textContent).toBe(String(3));
+        expect(container.textContent).toBe(String(3));
 
-            unmount();
-        }));
+        unmount();
+    }));
 
-    it('will change provider if provider props are updated', () =>
-        act(async () => {
-            type State = Readonly<{ value: number }>;
+    it('will change provider if provider props are updated', () => act(async () => {
+        const { Provider, useExtendedState } = createExtendedState<SingleValueState>();
 
-            const { Provider, useExtendedState } = createExtendedState<State>();
+        const { container, unmount } = render(
+            <Helper>
+                {() => {
+                    const [value, setValue] = useState(0);
 
-            const { container, unmount } = render(
-                <Helper>
-                    {() => {
-                        const [value, setValue] = useState(0);
+                    return (
+                        <>
+                            <button data-testid="button" type="button" onClick={() => setValue(1)}>
+                                Click me!
+                            </button>
+                            <div>
+                                {'Outer value: '}
+                                {value}
+                            </div>
+                            <Provider initial={{ value }}>
+                                <Helper>
+                                    {() => {
+                                        const internalValue = useExtendedState((s) => s.value);
+                                        return (
+                                            <div>
+                                                {'Internal value: '}
+                                                {internalValue}
+                                            </div>
+                                        );
+                                    }}
+                                </Helper>
+                            </Provider>
+                        </>
+                    );
+                }}
+            </Helper>,
+        );
 
-                        return (
-                            <>
-                                <button data-testid="button" onClick={() => setValue(1)}>
-                                    Click me!
-                                </button>
-                                <div>Outer value: {value}</div>
-                                <Provider initial={{ value }}>
-                                    <Helper>
-                                        {() => {
-                                            const value = useExtendedState((s) => s.value);
-                                            return (
-                                                <>
-                                                    <div>Internal value: {value}</div>
-                                                </>
-                                            );
-                                        }}
-                                    </Helper>
-                                </Provider>
-                            </>
-                        );
-                    }}
-                </Helper>
-            );
-
-            /**
+        /**
              * Initial value set to 0 everywhere
              */
-            expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 0', 'Internal value: 0']);
+        expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 0', 'Internal value: 0']);
 
-            fireEvent.click(await findByTestId(container, 'button'));
+        fireEvent.click(await findByTestId(container, 'button'));
 
-            /**
+        /**
              * Initial value set to 1 everywhere
              */
-            expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 1', 'Internal value: 1']);
+        expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 1', 'Internal value: 1']);
 
-            unmount();
-        }));
+        unmount();
+    }));
 
-    it('will not change provider if provider props are updated', () =>
-        act(async () => {
-            type State = Readonly<{ value: number }>;
+    it('will not change provider if provider props are updated', () => act(async () => {
+        const { Provider, useExtendedState } = createExtendedState<SingleValueState>({ ignoreInitialPropsChanges: true });
 
-            const { Provider, useExtendedState } = createExtendedState<State>({ ignoreInitialPropsChanges: true });
+        const { container, unmount } = render(
+            <Helper>
+                {() => {
+                    const [value, setValue] = useState(0);
 
-            const { container, unmount } = render(
-                <Helper>
-                    {() => {
-                        const [value, setValue] = useState(0);
+                    return (
+                        <>
+                            <button data-testid="button" type="button" onClick={() => setValue(1)}>
+                                Click me!
+                            </button>
+                            <div>
+                                {'Outer value: '}
+                                {value}
+                            </div>
+                            <Provider initial={{ value }}>
+                                <Helper>
+                                    {() => {
+                                        const internalValue = useExtendedState((s) => s.value);
+                                        return (
+                                            <div>
+                                                {'Internal value: '}
+                                                {internalValue}
+                                            </div>
+                                        );
+                                    }}
+                                </Helper>
+                            </Provider>
+                        </>
+                    );
+                }}
+            </Helper>,
+        );
 
-                        return (
-                            <>
-                                <button data-testid="button" onClick={() => setValue(1)}>
-                                    Click me!
-                                </button>
-                                <div>Outer value: {value}</div>
-                                <Provider initial={{ value }}>
-                                    <Helper>
-                                        {() => {
-                                            const value = useExtendedState((s) => s.value);
-                                            return (
-                                                <>
-                                                    <div>Internal value: {value}</div>
-                                                </>
-                                            );
-                                        }}
-                                    </Helper>
-                                </Provider>
-                            </>
-                        );
-                    }}
-                </Helper>
-            );
-
-            /**
+        /**
              * Initial value set to 0 everywhere
              */
-            expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 0', 'Internal value: 0']);
+        expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 0', 'Internal value: 0']);
 
-            fireEvent.click(await findByTestId(container, 'button'));
+        fireEvent.click(await findByTestId(container, 'button'));
 
-            /**
+        /**
              * Initial value set to 1 only outside the provider
              */
-            expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 1', 'Internal value: 0']);
+        expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 1', 'Internal value: 0']);
 
-            unmount();
-        }));
+        unmount();
+    }));
 
-    it('will actually handle and track changes even before hooks are setup', () =>
-        act(async () => {
-            const manager = new ExtendedStateManager<State>({ a: '0', b: '0' });
-            const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>({ ignoreInitialPropsChanges: true });
+    it('will actually handle and track changes even before hooks are setup', () => act(async () => {
+        const manager = new ExtendedStateManager<State>({ a: '0', b: '0' });
+        const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>({ ignoreInitialPropsChanges: true });
 
-            const { container, unmount } = render(
-                <Provider manager={manager}>
-                    <Helper>
-                        {() => {
-                            const dispatch = useExtendedStateDispatcher();
+        const { container, unmount } = render(
+            <Provider manager={manager}>
+                <Helper>
+                    {() => {
+                        const dispatch = useExtendedStateDispatcher();
 
-                            /**
+                        /**
                              * Update before hooks
                              */
-                            useLayoutEffect(() => dispatch({ a: '1' }), []);
+                        useLayoutEffect(() => dispatch({ a: '1' }), []);
 
-                            /**
+                        /**
                              * Update after hooks
                              */
-                            useEffect(() => dispatch({ b: '1' }), []);
+                        useEffect(() => dispatch({ b: '1' }), []);
 
-                            return <>{useExtendedState((s) => JSON.stringify(s))}</>;
-                        }}
-                    </Helper>
-                </Provider>
-            );
+                        return <>{useExtendedState((s) => JSON.stringify(s))}</>;
+                    }}
+                </Helper>
+            </Provider>,
+        );
 
-            await delay(10);
+        await delay(10);
 
-            expect(manager.getState()).toStrictEqual<State>({ a: '1', b: '1' });
-            expect(JSON.parse(container.textContent || '')).toStrictEqual<State>({ a: '1', b: '1' });
+        expect(manager.getState()).toStrictEqual<State>({ a: '1', b: '1' });
+        expect(JSON.parse(container.textContent || '')).toStrictEqual<State>({ a: '1', b: '1' });
 
-            unmount();
-        }));
+        unmount();
+    }));
 });

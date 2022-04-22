@@ -1,15 +1,16 @@
 {
     "env": {
         "browser": true,
-        "es2021": true
+        "es2021": true,
+        "jest": true
     },
-    "extends": ["eslint:recommended", "plugin:react/recommended", "plugin:@typescript-eslint/recommended", "prettier"],
+    "extends": ["plugin:react/recommended", "airbnb"],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
         "ecmaFeatures": {
             "jsx": true
         },
-        "ecmaVersion": 12,
+        "ecmaVersion": "latest",
         "sourceType": "module",
         "project": "tsconfig.json"
     },
@@ -21,9 +22,17 @@
     "plugins": ["react", "@typescript-eslint"],
     "rules": {
         "indent": ["error", 4],
-        "linebreak-style": ["error", "unix"],
-        "quotes": ["error", "single"],
-        "semi": ["error", "always"],
+        "react/jsx-filename-extension": ["error", { "extensions": [".tsx"] }],
+        "max-len": ["error", 160],
+        "no-unused-vars": "off",
+        "react/jsx-indent": ["error", 4],
+        "@typescript-eslint/no-unused-vars": ["error"],
+        "import/extensions": "off",
+        "import/no-unresolved": "off",
+        "object-curly-newline": ["error", { "ObjectPattern": { "multiline": true }, "ExportDeclaration": { "multiline": true } }],
+        "react/function-component-definition": "off",
+        "import/no-extraneous-dependencies": "off",
+        "no-promise-executor-return": "off",
         "react/prop-types": "off"
     }
 }
