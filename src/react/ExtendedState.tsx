@@ -91,6 +91,8 @@ export const createExtendedState = <S extends PossibleExtendedState>({ ignoreIni
          */
         const manager = getManager(useExtendedState);
 
+        const oldState = manager.getState();
+
         /**
          * Calulate initial value and set it to the result
          */
@@ -100,35 +102,40 @@ export const createExtendedState = <S extends PossibleExtendedState>({ ignoreIni
          * Use layout is here so subscription (and further changes)
          * Are done at the first possible moment
          */
-        useLayoutEffect(
-            () =>
-                manager.subscribe(
-                    (previousState, currentState) => {
-                        const previous = selector(previousState);
-                        const current = selector(currentState);
+        useLayoutEffect(() => {
+            /**
+             * If the the value being returned is a function
+             * Then it needs to be wrapped in another function in order to avoid its execution
+             *
+             * The reason?
+             * https://reactjs.org/docs/hooks-reference.html#functional-updates
+             */
+            const updateValue = () => {
+                const newValue = selector(manager.getState());
+                setResult(typeof newValue === 'function' ? () => newValue : newValue);
+            };
 
-                        /**
-                         * True if
-                         *
-                         * - previous and current value match, so there is no need to give them a pass
-                         * - there is a custom filter and it says they are equal
-                         */
-                        return Boolean(previous === current || (filter && areResultsEqual(current, previous, filter)));
-                    },
-                    /**
-                     * If the the value being returned is a function
-                     * Then it needs to be wrapped in another function in order to avoid its execution
-                     *
-                     * The reason?
-                     * https://reactjs.org/docs/hooks-reference.html#functional-updates
-                     */
-                    () => {
-                        const newValue = selector(manager.getState());
-                        setResult(typeof newValue === 'function' ? () => newValue : newValue);
-                    }
-                ),
-            [manager]
-        );
+            if (oldState !== manager.getState()) {
+                /**
+                 * Between the hook and the layout effect execution
+                 * The state was changed, therefore needs to be updated
+                 */
+                updateValue();
+            }
+
+            return manager.subscribe((previousState, currentState) => {
+                const previous = selector(previousState);
+                const current = selector(currentState);
+
+                /**
+                 * True if
+                 *
+                 * - previous and current value match, so there is no need to give them a pass
+                 * - there is a custom filter and it says they are equal
+                 */
+                return Boolean(previous === current || (filter && areResultsEqual(current, previous, filter)));
+            }, updateValue);
+        }, [manager]);
 
         return currentResult;
     };

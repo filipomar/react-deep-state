@@ -1,9 +1,9 @@
 import { ExtendedStateManager } from '.';
 
+type State = Readonly<{ a: string | null; b: string | null }>;
+
 describe(ExtendedStateManager.name, () => {
     it('listens to any changes if no filter is passed', () => {
-        type State = { readonly a: string | null; readonly b: string | null };
-
         const subscriber = jest.fn();
 
         const manager = new ExtendedStateManager<State>({ a: null, b: null });
@@ -31,8 +31,6 @@ describe(ExtendedStateManager.name, () => {
     });
 
     it('gets called only to changes that pass through the filter', () => {
-        type State = { readonly a: string | null; readonly b: string | null };
-
         const subscriber = jest.fn();
         const filter = jest.fn().mockImplementation((previous: State, current: State) => previous.b === current.b);
 
@@ -82,8 +80,6 @@ describe(ExtendedStateManager.name, () => {
     });
 
     it('gets called only when the hash changes', () => {
-        type State = { readonly a: string | null; readonly b: string | null };
-
         const subscriber = jest.fn();
         const filter = jest.fn().mockImplementation((state: State) => state.b);
 
@@ -133,8 +129,6 @@ describe(ExtendedStateManager.name, () => {
     });
 
     it('allows for the unsub method to be called more than once without issues', () => {
-        type State = { readonly a: string | null; readonly b: string | null };
-
         const subscriberOne = jest.fn();
         const subscriberTwo = jest.fn();
         const subscriberThree = jest.fn();

@@ -1,12 +1,12 @@
-import React, { ConsumerProps, FC, useState } from 'react';
+import React, { ConsumerProps, FC, useEffect, useLayoutEffect, useState } from 'react';
 import { act, fireEvent, render, findByTestId } from '@testing-library/react';
 
 import { createExtendedState as createExtendedState, Dispatcher } from '.';
 
 import { ExtendedStateManager } from '..';
 
-type State = { readonly a: string | null; readonly b: string | null };
-const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<{ readonly a: string | null; readonly b: string | null }>();
+type State = Readonly<{ a: string | null; b: string | null }>;
+const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
 
 const Helper: FC<ConsumerProps<void>> = ({ children }) => {
     return <>{children()}</>;
@@ -171,7 +171,7 @@ describe(createExtendedState.name, () => {
     });
 
     it('allows for the usage of selectors that yield functions without calling them', () => {
-        type State = { readonly handler: () => void };
+        type State = Readonly<{ handler: () => void }>;
 
         const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
 
@@ -253,7 +253,7 @@ describe(createExtendedState.name, () => {
 
     it('allows state update through derived state generation', () =>
         act(async () => {
-            type State = { readonly value: number; readonly undisturbed: number };
+            type State = Readonly<{ value: number; undisturbed: number }>;
             const renderSpy = jest.fn<void, [ReturnType<Dispatcher<State>>]>();
 
             const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
@@ -297,7 +297,7 @@ describe(createExtendedState.name, () => {
 
     it('properly subscribes event even if changes are made before final render', () =>
         act(async () => {
-            type State = { readonly value: number };
+            type State = Readonly<{ value: number }>;
             const state = new ExtendedStateManager<State>({ value: 1 });
 
             const { Provider, useExtendedState } = createExtendedState<State>();
@@ -355,7 +355,7 @@ describe(createExtendedState.name, () => {
 
     it('will change provider if provider props are updated', () =>
         act(async () => {
-            type State = { readonly value: number };
+            type State = Readonly<{ value: number }>;
 
             const { Provider, useExtendedState } = createExtendedState<State>();
 
@@ -405,7 +405,7 @@ describe(createExtendedState.name, () => {
 
     it('will not change provider if provider props are updated', () =>
         act(async () => {
-            type State = { readonly value: number };
+            type State = Readonly<{ value: number }>;
 
             const { Provider, useExtendedState } = createExtendedState<State>({ ignoreInitialPropsChanges: true });
 
@@ -449,6 +449,41 @@ describe(createExtendedState.name, () => {
              * Initial value set to 1 only outside the provider
              */
             expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 1', 'Internal value: 0']);
+
+            unmount();
+        }));
+
+    it('will actually handle and track changes even before hooks are setup', () =>
+        act(async () => {
+            const manager = new ExtendedStateManager<State>({ a: '0', b: '0' });
+            const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>({ ignoreInitialPropsChanges: true });
+
+            const { container, unmount } = render(
+                <Provider manager={manager}>
+                    <Helper>
+                        {() => {
+                            const dispatch = useExtendedStateDispatcher();
+
+                            /**
+                             * Update before hooks
+                             */
+                            useLayoutEffect(() => dispatch({ a: '1' }), []);
+
+                            /**
+                             * Update after hooks
+                             */
+                            useEffect(() => dispatch({ b: '1' }), []);
+
+                            return <>{useExtendedState((s) => JSON.stringify(s))}</>;
+                        }}
+                    </Helper>
+                </Provider>
+            );
+
+            await delay(10);
+
+            expect(manager.getState()).toStrictEqual<State>({ a: '1', b: '1' });
+            expect(JSON.parse(container.textContent || '')).toStrictEqual<State>({ a: '1', b: '1' });
 
             unmount();
         }));
