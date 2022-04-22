@@ -3,7 +3,7 @@ import React, { createContext, FC, useContext, useLayoutEffect, useMemo, useStat
 import { ExtendedStateManager, areResultsEqual, Filter, PossibleExtendedState } from '../ExtendedStateManager';
 import { CapturePoint, throwCaptured } from '../utils';
 
-export type ProvderProps<S extends PossibleExtendedState> = { readonly initial: S } | { readonly manager: ExtendedStateManager<S> };
+export type ProvderProps<S extends PossibleExtendedState> = Readonly<{ initial: S } | { manager: ExtendedStateManager<S> }>;
 export type Selector<S, R> = (s: S) => R;
 export type Dispatcher<S> = () => (newStateOrGenerator: Partial<S> | ((currentState: S) => Partial<S>)) => void;
 
@@ -13,14 +13,14 @@ export type Dispatcher<S> = () => (newStateOrGenerator: Partial<S> | ((currentSt
  *
  * @example const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<{ readonly a: string | null; }>();
  */
-export type ExtendedState<S extends PossibleExtendedState> = {
+export type ExtendedState<S extends PossibleExtendedState> = Readonly<{
     /**
      * The provider of the extended state
      *
      * @example <Provider initial={{ a: null, b: null }}>{children}</Provider>
      * @example <Provider manager={new ExtendedStateManager({ a: null, b: null })}>{children}</Provider>
      */
-    readonly Provider: FC<ProvderProps<S>>;
+    Provider: FC<ProvderProps<S>>;
 
     /**
      * If you want to use the state as a hook
@@ -28,22 +28,22 @@ export type ExtendedState<S extends PossibleExtendedState> = {
      * @example useExtendedState((s) => s.a)
      * @example useExtendedState((s) => s.a, (s) => s.a)
      */
-    readonly useExtendedState: <R>(state: Selector<S, R>, filter?: Filter<R>) => R;
+    useExtendedState: <R>(state: Selector<S, R>, filter?: Filter<R>) => R;
 
     /**
      * If you want to update the state
      * @example useExtendedStateDispatcher()({ a: null })
      */
-    readonly useExtendedStateDispatcher: Dispatcher<S>;
-};
+    useExtendedStateDispatcher: Dispatcher<S>;
+}>;
 
-type CreateExtendedStateArgs = {
+type CreateExtendedStateArgs = Readonly<{
     /**
      * Ignore if changes the Provider props should result in changes of the state
      * @default false
      */
-    readonly ignoreInitialPropsChanges?: boolean;
-};
+    ignoreInitialPropsChanges?: boolean;
+}>;
 
 /**
  * For your sanity

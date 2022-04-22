@@ -9,8 +9,8 @@ export type CapturePoint = Parameters<ErrorConstructor['captureStackTrace']>[1];
 export const throwCaptured = (error: Error, func: CapturePoint): never => {
     try {
         throw error;
-    } catch (e) {
-        Error.captureStackTrace(e, func);
+    } catch (e: unknown) {
+        Error.captureStackTrace(e as typeof error, func);
         throw e;
     }
 };
