@@ -24,7 +24,7 @@ import { createExtendedState } from 'react-extended-state';
 /**
  * This will be destructured, so be careful of what the top state is
  **/
-type State = { readonly name: string };
+type State = Readonly<{ name: string }>;
 
 const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
 

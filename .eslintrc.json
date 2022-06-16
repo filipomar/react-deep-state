@@ -22,17 +22,43 @@
     "plugins": ["react", "@typescript-eslint"],
     "rules": {
         "indent": ["error", 4],
-        "react/jsx-filename-extension": ["error", { "extensions": [".tsx"] }],
         "max-len": ["error", 160],
         "no-unused-vars": "off",
-        "react/jsx-indent": ["error", 4],
         "@typescript-eslint/no-unused-vars": ["error"],
         "import/extensions": "off",
         "import/no-unresolved": "off",
         "object-curly-newline": ["error", { "ObjectPattern": { "multiline": true }, "ExportDeclaration": { "multiline": true } }],
+        "import/no-extraneous-dependencies": ["error", { "devDependencies": ["**/*.test.tsx"] }],
+        "@typescript-eslint/member-ordering": [
+            "error",
+            {
+                "default": [
+                    // Index signature
+                    "signature",
+
+                    // Fields
+                    "field",
+
+                    "private-static-method",
+                    "protected-static-method",
+                    "public-static-method",
+
+                    // Constructors
+                    "constructor",
+
+                    // Getters and Setters at the same rank
+                    ["get", "set"],
+
+                    // Methods
+                    "private-method",
+                    "protected-method",
+                    "public-method"
+                ]
+            }
+        ],
+        "react/jsx-indent": ["error", 4],
         "react/function-component-definition": "off",
-        "import/no-extraneous-dependencies": "off",
-        "no-promise-executor-return": "off",
+        "react/jsx-filename-extension": ["error", { "extensions": [".tsx"] }],
         "react/prop-types": "off"
     }
 }
