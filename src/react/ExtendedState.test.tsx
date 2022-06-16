@@ -10,7 +10,9 @@ type SingleValueState = Readonly<{ value: number }>;
 
 const Helper: FC<ConsumerProps<void>> = ({ children }) => <>{children()}</>;
 
-const delay = async (time: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, time));
+const delay = async (time: number): Promise<void> => new Promise((resolve) => {
+    setTimeout(resolve, time);
+});
 
 describe(createExtendedState.name, () => {
     it('throws error if hooks are called outside of provider', () => {

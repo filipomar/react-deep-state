@@ -40,13 +40,17 @@ export const areResultsEqual = <S>(previous: S, current: S, filter: Filter<S>): 
 };
 
 export class ExtendedStateManager<S extends PossibleExtendedState> {
-    private state: S;
-
     private readonly subscribers: Set<Subscriber> = new Set();
 
-    constructor(initialState: S) {
-        this.state = initialState;
+    constructor(private state: S) {
         this.subscribers = new Set();
+    }
+
+    private addSubscriber(subscriber: Subscriber): Unsubber {
+        this.subscribers.add(subscriber);
+        return () => {
+            this.subscribers.delete(subscriber);
+        };
     }
 
     /**
@@ -63,13 +67,6 @@ export class ExtendedStateManager<S extends PossibleExtendedState> {
      */
     getState(): S {
         return this.state;
-    }
-
-    private addSubscriber(subscriber: Subscriber): Unsubber {
-        this.subscribers.add(subscriber);
-        return () => {
-            this.subscribers.delete(subscriber);
-        };
     }
 
     /**
