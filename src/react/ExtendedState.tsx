@@ -1,4 +1,4 @@
-import React, { createContext, FC, useContext, useLayoutEffect, useMemo, useState } from 'react';
+import React, { createContext, FC, PropsWithChildren, useContext, useLayoutEffect, useMemo, useState } from 'react';
 
 import { ExtendedStateManager, areResultsEqual, Filter, PossibleExtendedState } from '../ExtendedStateManager';
 import { CapturePoint, throwCaptured } from '../utils';
@@ -11,7 +11,7 @@ export type Dispatcher<S> = () => (newStateOrGenerator: Partial<S> | ((currentSt
  * Creates the `ExtendedState` object necessary to create and manage an extended state on react
  * Allowing simple way to manage a state with-out unnecessary renders
  *
- * @example const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<{ readonly a: string | null; }>();
+ * @example const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<Readonly<{ a: string | null; }>>();
  */
 export type ExtendedState<S extends PossibleExtendedState> = Readonly<{
     /**
@@ -20,7 +20,7 @@ export type ExtendedState<S extends PossibleExtendedState> = Readonly<{
      * @example <Provider initial={{ a: null, b: null }}>{children}</Provider>
      * @example <Provider manager={new ExtendedStateManager({ a: null, b: null })}>{children}</Provider>
      */
-    Provider: FC<ProvderProps<S>>;
+    Provider: FC<PropsWithChildren<ProvderProps<S>>>;
 
     /**
      * If you want to use the state as a hook
