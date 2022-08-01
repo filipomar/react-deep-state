@@ -13,6 +13,8 @@ Then this is a perfect solution for you! A simple react provider and hook implem
 -   It has type checking at its core
 -   Easy setup (under 5 lines)
 -   No more useless renders!
+-   Re-render filtering from the generated value
+-   Scope dependencies
 
 Usage:
 
@@ -34,14 +36,17 @@ const App: FC = () => {
 
     return (
         <div>
-            <label>Name: ${name}</label>
+            <label>
+                Name:
+                {name}
+            </label>
             <input type="text" value={name} onChange={(e) => dispatch({ name: e.target.value })} />
         </div>
     );
 };
 
 render(
-    <Provider initial={{ name: '' }}>
+    <Provider value={{ name: '' }}>
         <App />
     </Provider>,
     document.querySelector('#root')

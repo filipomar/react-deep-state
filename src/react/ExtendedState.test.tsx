@@ -27,7 +27,7 @@ describe(createExtendedState.name, () => {
         const renderSpy = jest.fn();
 
         const { container } = render(
-            <Provider initial={{ a: null, b: null }}>
+            <Provider value={{ a: null, b: null }}>
                 <Helper>
                     {() => {
                         const a = useExtendedState((s) => s.a);
@@ -117,7 +117,10 @@ describe(createExtendedState.name, () => {
             <Provider manager={manager}>
                 <Helper>
                     {() => {
-                        const { a } = useExtendedState((s) => s, filterSpy);
+                        const { a } = useExtendedState(
+                            (s) => s,
+                            (...args: [State]) => filterSpy(...args),
+                        );
                         renderSpy();
                         return <>{String(a)}</>;
                     }}
@@ -148,12 +151,167 @@ describe(createExtendedState.name, () => {
         expect(filterSpy).toBeCalledTimes(6);
     });
 
+    it('allows for dependencies as re-rendering parameters without losing the scope', () => act(async () => {
+        const { Provider, useExtendedState } = createExtendedState<State>();
+
+        const manager = new ExtendedStateManager<State>({ a: 'I am A', b: 'I am B' });
+
+        const { container } = render(
+            <Provider manager={manager}>
+                <Helper>
+                    {() => {
+                        const [id, setId] = useState<keyof State>('a');
+
+                        const withoutIdAsDep = useExtendedState((s) => s[id]);
+                        const withoutIdAsDepWithFilter = useExtendedState(
+                            (s) => s[id],
+                            (v: string | null) => v,
+                        );
+
+                        const withIdAsDep = useExtendedState((s) => s[id], [id]);
+                        const withIdAsDepWithFilterFirst = useExtendedState(
+                            (s) => s[id],
+                            [id],
+                            (v: string | null) => v,
+                        );
+                        const withIdAsDepWithFilterLast = useExtendedState(
+                            (s) => s[id],
+                            (v: string | null) => v,
+                            [id],
+                        );
+
+                        return (
+                            <div>
+                                <div id="reciever">
+                                    {JSON.stringify({
+                                        withoutIdAsDep,
+                                        withoutIdAsDepWithFilter,
+                                        withIdAsDep,
+                                        withIdAsDepWithFilterFirst,
+                                        withIdAsDepWithFilterLast,
+                                    })}
+                                </div>
+                                <div id="changer" role="none" onClick={() => setId('b')}>
+                                    Change the id
+                                </div>
+                            </div>
+                        );
+                    }}
+                </Helper>
+            </Provider>,
+        );
+
+        const reciever = container.querySelector('#reciever');
+        const changer = container.querySelector('#changer');
+
+        if (!reciever?.textContent || !changer) {
+            throw new Error('Reciever and changer were expected');
+        }
+
+        /** Initial value is set */
+        expect(JSON.parse(reciever.textContent)).toStrictEqual({
+            withoutIdAsDep: 'I am A',
+            withoutIdAsDepWithFilter: 'I am A',
+            withIdAsDep: 'I am A',
+            withIdAsDepWithFilterFirst: 'I am A',
+            withIdAsDepWithFilterLast: 'I am A',
+        });
+
+        manager.setState({ a: 'I am A+' });
+
+        await delay(0);
+
+        /** All values are updated as everyones scope is correct */
+        expect(JSON.parse(reciever.textContent)).toStrictEqual({
+            withoutIdAsDep: 'I am A+',
+            withoutIdAsDepWithFilter: 'I am A+',
+            withIdAsDep: 'I am A+',
+            withIdAsDepWithFilterFirst: 'I am A+',
+            withIdAsDepWithFilterLast: 'I am A+',
+        });
+
+        /** Execute the changer (which should break the scope) */
+        fireEvent.click(changer);
+
+        /** Only value with id as dependency is updated */
+        expect(JSON.parse(reciever.textContent)).toStrictEqual({
+            withoutIdAsDep: 'I am A+',
+            withoutIdAsDepWithFilter: 'I am A+',
+            withIdAsDep: 'I am B',
+            withIdAsDepWithFilterFirst: 'I am B',
+            withIdAsDepWithFilterLast: 'I am B',
+        });
+
+        /** Update other value */
+        manager.setState({ b: 'I am B+' });
+
+        /** Only value that has their state updated, are the ones with id as dependency, which corrects the scope of the hook */
+        expect(JSON.parse(reciever.textContent)).toStrictEqual({
+            withoutIdAsDep: 'I am A+',
+            withoutIdAsDepWithFilter: 'I am A+',
+            withIdAsDep: 'I am B+',
+            withIdAsDepWithFilterFirst: 'I am B+',
+            withIdAsDepWithFilterLast: 'I am B+',
+        });
+    }));
+
+    it('will change provider if provider props are updated', () => act(async () => {
+        const { Provider, useExtendedState } = createExtendedState<SingleValueState>();
+
+        const { container, unmount } = render(
+            <Helper>
+                {() => {
+                    const [value, setValue] = useState(0);
+
+                    return (
+                        <>
+                            <button data-testid="button" type="button" onClick={() => setValue(1)}>
+                                Click me!
+                            </button>
+                            <div>
+                                {'Outer value: '}
+                                {value}
+                            </div>
+                            <Provider value={{ value }}>
+                                <Helper>
+                                    {() => {
+                                        const internalValue = useExtendedState((s) => s.value);
+                                        return (
+                                            <div>
+                                                {'Internal value: '}
+                                                {internalValue}
+                                            </div>
+                                        );
+                                    }}
+                                </Helper>
+                            </Provider>
+                        </>
+                    );
+                }}
+            </Helper>,
+        );
+
+        /**
+             * Initial value set to 0 everywhere
+             */
+        expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 0', 'Internal value: 0']);
+
+        fireEvent.click(await findByTestId(container, 'button'));
+
+        /**
+             * Initial value set to 1 everywhere
+             */
+        expect(Array.from(container.querySelectorAll('div')).map((el) => el.textContent)).toStrictEqual(['Outer value: 1', 'Internal value: 1']);
+
+        unmount();
+    }));
+
     it('allows for internal dispatching of changes', () => {
         const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>();
         const renderSpy = jest.fn<void, [ReturnType<Dispatcher<State>>]>();
 
         const { container } = render(
-            <Provider initial={{ a: null, b: null }}>
+            <Provider value={{ a: null, b: null }}>
                 <Helper>
                     {() => {
                         const dispatch = useExtendedStateDispatcher();
@@ -184,7 +342,7 @@ describe(createExtendedState.name, () => {
         const secondHandler = jest.fn<void, []>();
 
         const { container } = render(
-            <Provider initial={{ handler: firstHandler }}>
+            <Provider value={{ handler: firstHandler }}>
                 <Helper>
                     {() => {
                         const dispatch = useExtendedStateDispatcher();
@@ -259,7 +417,7 @@ describe(createExtendedState.name, () => {
             const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<DerivedState>();
 
             const { container } = render(
-                <Provider initial={{ value: 2, undisturbed: 1 }}>
+                <Provider value={{ value: 2, undisturbed: 1 }}>
                     <Helper>
                         {() => {
                             const dispatch = useExtendedStateDispatcher();
@@ -363,7 +521,7 @@ describe(createExtendedState.name, () => {
                                 {'Outer value: '}
                                 {value}
                             </div>
-                            <Provider initial={{ value }}>
+                            <Provider value={{ value }}>
                                 <Helper>
                                     {() => {
                                         const internalValue = useExtendedState((s) => s.value);
@@ -398,7 +556,7 @@ describe(createExtendedState.name, () => {
     }));
 
     it('will not change provider if provider props are updated', () => act(async () => {
-        const { Provider, useExtendedState } = createExtendedState<SingleValueState>({ ignoreInitialPropsChanges: true });
+        const { Provider, useExtendedState } = createExtendedState<SingleValueState>({ ignorePropsChanges: true });
 
         const { container, unmount } = render(
             <Helper>
@@ -414,7 +572,7 @@ describe(createExtendedState.name, () => {
                                 {'Outer value: '}
                                 {value}
                             </div>
-                            <Provider initial={{ value }}>
+                            <Provider value={{ value }}>
                                 <Helper>
                                     {() => {
                                         const internalValue = useExtendedState((s) => s.value);
@@ -450,7 +608,7 @@ describe(createExtendedState.name, () => {
 
     it('will actually handle and track changes even before hooks are setup', () => act(async () => {
         const manager = new ExtendedStateManager<State>({ a: '0', b: '0' });
-        const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>({ ignoreInitialPropsChanges: true });
+        const { Provider, useExtendedState, useExtendedStateDispatcher } = createExtendedState<State>({ ignorePropsChanges: true });
 
         const { container, unmount } = render(
             <Provider manager={manager}>
